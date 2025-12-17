@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    environment:
+      TZ: "Europe/Paris"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - code-net
+
+  code-server:
+    build:
+      context: .
+      dockerfile: code-server.Dockerfile
+    container_name: code-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./projects:/home/coder/projects
+      - ./config/code-server/config.yaml:/home/coder/.config/code-server/config.yaml:ro
+      - ./config/code-server/settings.json:/home/coder/.local/share/code-server/User/settings.json
+    command: ["--config", "/home/coder/.config/code-server/config.yaml", "/home/coder/projects"]
+    restart: unless-stopped
+    networks:
+      - code-net
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 6G
+
+networks:
+  code-net:
+    driver: bridge
+
+volumes:
+  code-server-data:
